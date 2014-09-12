@@ -1,0 +1,101 @@
+#!/usr/bin/python
+'''
+cheevos
+
+A tool for generating fun stats about bugs and the devs who hack on them
+'''
+
+import argparse
+import os
+import json
+import sys
+
+# for testing purposes
+sys.path.insert(0,"..")
+sys.path.insert(0,".")
+
+from cheevos.CheevosJIRA import *
+from cheevos.CheevosConfluence import *
+
+def parseCheevoArgs():
+    parser = argparse.ArgumentParser(description="Let's make some cheevos!")
+
+    parser.add_argument('--inputType', metavar='<issue system>', type=str,
+                            help='Bug data store [default value = jira]', default='jira')
+
+    parser.add_argument('--outputType', metavar='<content mgr system>', type=str,
+                            help='Content display [default value = confluence]', default='confluence')
+
+    parser.add_argument('--trophyName', metavar='trophyName', type=str,
+                            help='Unique name for your cheevo trophy')
+
+    parser.add_argument('--confName', metavar='confName', type=str,
+                            help='Unique tag to include in configuration template name')
+
+    return(parser.parse_args(sys.argv[1:]), parser)
+
+def createConfigFile(inputType, outputType, filename):
+        print "Creating new template file to make a trophy."
+        print "Query source: \t%s" % inputType
+        print "Output source: \t%s" % outputType
+        print "Config file: \t%s" % filename
+        newObj = CheevosBase()
+        if outputType == "confluence":
+            contentObj = CheevosConfluence()
+            contentObj.addConfluenceNodesToTemplate(newObj)
+
+        newObj.writeTemplate(inputType,filename)
+
+def main():
+
+    (args, parseObj) = parseCheevoArgs()
+
+    # initial parse
+
+    if args.inputType and args.outputType and args.trophyName:
+        tmplName = "cheevos-%s.json" % (args.trophyName)
+        if not os.path.exists(tmplName):
+            createConfigFile(args.inputType, args.outputType, tmplName)
+        else:
+            answer = None
+            while not answer:
+                question = raw_input("Looks like you already have a config file of that name: %s.\n\
+Do you wish to override?[y/n]" % tmplName)
+                if question.lower() == "y":
+                    createConfigFile(args.inputType, args.outputType, tmplName)
+                    answer = True
+                elif question.lower() == "n":
+                    sys.exit("Exiting...")
+                    answer = True
+
+    elif args.confName:
+        baseObj = CheevosBase()
+        configData = baseObj.loadTemplate(args.confName)
+        if configData['bug_system']['type'] == "jira":
+            cheevoObj = CheevosJIRA()
+            cheevoObj.loadJIRAInfoFromConfig(configData)
+        else:
+            # next up, bamboo and jenkins!
+            pass
+
+        qRes = cheevoObj.runQuery()
+        cRes = cheevoObj.tabulateUsers(cheevoObj.getUserNamesFromQueryResults(qRes))
+
+        if args.outputType == "confluence":
+            contentObj = CheevosConfluence()
+            contentObj.loadConfluenceInfoFromConfig(configData)
+            contentObj.writeCheevosToPage(cRes)
+
+        print "Trophy page written: %s" % contentObj.trophyPageURL
+
+    else:
+        print "(!) You need to either specify a configuration json file, or else specify "
+        print "the information necessary to generate a template.\n" 
+        parseObj.print_help()
+
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
