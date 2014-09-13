@@ -82,7 +82,9 @@ class CheevosBase():
     def writeResults(self):
         raise NotImplementedError
 
-    def printErrorMsg(self, msg, error):
-        print msg
-        print "---------------\nException:\n%s" % error
+    def raiseError(self,msg,exception=None):
+        errorMsg = "%s\n" % msg
+        if exception:
+            errorMsg += "\nException:\n---------\n %s\n---------" % exception
+        raise CheevosError(errorMsg)
 

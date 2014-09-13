@@ -4,24 +4,6 @@ import sys
 import xmlrpclib
 
 from CheevosBase import *
-'''
-1) Have a way of assigning images to trophies dynamically.  Old script assumed images were previously updated, i.e.:
-DEV_CHEEVOS = { 0:"<ac:image><ri:attachment ri:filename=\"gold_mushroom2.jpeg\" /></ac:image>",
-        1:"<ac:image><ri:attachment ri:filename=\"green_mushroom3.jpeg\" /></ac:image>",
-        2:"<ac:image><ri:attachment ri:filename=\"red_mushroom2.jpeg\" /></ac:image>"}
-
-QA_CHEEVOS = { 0:"<ac:image><ri:attachment ri:filename=\"metal-detector-guy2.jpg\" /></ac:image>",
-        1:"<ac:image><ri:attachment ri:filename=\"sherlock-magnifying-glass2.jpg\" /></ac:image>",
-        2:"<ac:image><ri:attachment ri:filename=\"binoculars2.jpg\" /></ac:image>"}
-
-BREAK_CHEEVOS ={ 0:"<ac:image><ri:attachment ri:filename=\"PWNWAR_NUKE2.jpg\" /></ac:image>",
-                1:"<ac:image><ri:attachment ri:filename=\"volcano2.jpg\" /></ac:image>",
-                2:"<ac:image><ri:attachment ri:filename=\"FireBIG2.jpg\" /></ac:image>"} 
-
-2) have a way to specify confluence space -- ADD A 'SPACE' ENTRY TO CHEEVOSTEMPLATE
-# confluece information
-i.e.: wikiSpace = "DO"
-'''
 
 class CheevosConfluence(CheevosBase):
     def __init__(self):
@@ -53,11 +35,6 @@ class CheevosConfluence(CheevosBase):
         self.AttachStart = "<ac:image><ri:attachment ri:filename=\""
         self.AttachEnd = "\" /></ac:image>"
 
-    def _raiseError(self,msg,exception=None):
-        errorMsg = "%s\n" % msg
-        if exception:
-            errorMsg += "\nException:\n---------\n %s\n---------" % exception
-        raise CheevosError(errorMsg)
 
     def _beginSession(self):
         '''
@@ -70,7 +47,7 @@ class CheevosConfluence(CheevosBase):
             self.pageHandle = self.server.confluence2.getPage(self.token, self.wikiSpace, self.wikiPage)
         except Exception, e:
             msg = "Unable to get a page handle to specified page: %s\n" % self.trophyPageURL
-            self._raiseError(msg,e)
+            self.raiseError(msg,e)
         if self.verbose:
             print self.pageHandle
         else:
@@ -84,7 +61,7 @@ class CheevosConfluence(CheevosBase):
             self.server.confluence2.storePage(self.token, self.pageHandle)
         except Exception, e:
             msg = "Unable to write page to confluence server. Check to see if it exists %s" % self.trophyPageURL
-            self._raiseError(msg,e)
+            self.raiseError(msg,e)
 
     def _endSession(self):
         '''
@@ -119,12 +96,12 @@ class CheevosConfluence(CheevosBase):
                 self.trophyList.append(configData['trophies'][trophyFile])
                 check += 1
             else:
-                self._raiseError("Looks like we're missing a trophy image file?")
+                self.raiseError("Looks like we're missing a trophy image file?")
 
         self.trophyPageURL = self.getPageURL(configData)
 
         if not (self.wikiSpace or self.serverURL or self.username or self.password or self.pageHandle):
-            self._raiseError("Missing necessary information from %s template/parameters") 
+            self.raiseError("Missing necessary information from %s template/parameters") 
 
     def validateTrophyAttachments(self):
         trophyNames = []
@@ -136,14 +113,14 @@ class CheevosConfluence(CheevosBase):
             fileList = self.server.confluence2.getAttachments(self.token, self.pageHandle['id'])
         except Exception, e:
             msg = "Unable to get a list of attachments from page"
-            self._raiseError(msg,e)
+            self.raiseError(msg,e)
 
         for f in fileList:
             trophyNames.append(f['fileName'])
 
         for i in self.trophyList:
             if i not in trophyNames:
-                self._raiseError("Trophy '%s' appears to be missing" % i)
+                self.raiseError("Trophy '%s' appears to be missing" % i)
                 return False
 
         return True

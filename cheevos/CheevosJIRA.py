@@ -32,7 +32,7 @@ class CheevosJIRA(CheevosBase):
         self.jiraUsername = configData['bug_system']['username']
         self.jiraPassword = configData['bug_system']['password']
         if not (self.jqlQuery or self.serverURL or self.jiraUsername or self.jiraPassword):
-            raise CheevosError("Missing necessary connection from %s template" % self.tmplName) 
+            self.raiseError("Missing necessary connection from %s template" % self.tmplName) 
 
     def _createConnection(self):
         jira_server = {'server': self.serverURL}
@@ -40,8 +40,7 @@ class CheevosJIRA(CheevosBase):
         try:
             self.jiraConn = JIRA(options=jira_server,basic_auth=jira_auth)
         except Exception, e:
-            print "Unable to create connection to JIRA: %s", e
-            raise
+            self.raiseError("Unable to create connection to JIRA", e)
 
     def runQuery(self):
         self._createConnection()
@@ -49,7 +48,7 @@ class CheevosJIRA(CheevosBase):
             jql_res = self.jiraConn.search_issues(self.jqlQuery, startAt=0, maxResults=None, fields="assignee,id", expand=None, json_result=True)
         except Exception, e:
             msg = "Failed to run JIRA query: %s" % self.jqlQuery
-            self.printErrorMsg(msg, e)
+            self.raiseError(msg, e)
             raise
 
 
@@ -111,7 +110,7 @@ class CheevosJIRA(CheevosBase):
                 finalDict[value].append(key)
 
         if len(finalDict.keys()) < 1:
-            raise CheevosError("Error Problem tabulating users!")
+            self.raiseError("Error Problem tabulating users!")
         return finalDict
 
 
