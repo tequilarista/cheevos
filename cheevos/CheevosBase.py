@@ -8,6 +8,7 @@ Have good working base class to extend for different bug tracking systems.
 Local tasks:
     * read and write template files
     * define required sub-class method imlementations
+    * do generic output of results
 
 '''
 
@@ -79,8 +80,14 @@ class CheevosBase():
     def runQuery(self):
         raise NotImplementedError
 
-    def writeResults(self):
-        raise NotImplementedError
+    def writeResults(self, outputFile, results, type="json"):
+        if type == "json":
+            output = { 'results': results }
+            fh = open("output-" + outputFile, "w+")
+            dump = json.dumps(output, indent=4, sort_keys=True)
+            fh.write(dump)
+            fh.close()
+        # XXXX todo: elif type == "xml"/"csv":
 
     def raiseError(self,msg,exception=None):
         errorMsg = "%s\n" % msg

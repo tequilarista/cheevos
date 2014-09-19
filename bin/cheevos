@@ -24,7 +24,7 @@ def parseCheevoArgs():
                             help='Bug data store [default value = jira]', default='jira')
 
     parser.add_argument('--outputType', metavar='<content mgr system>', type=str,
-                            help='Content display [default value = confluence]', default='confluence')
+                            help='Content display (confluence, json) [default value = confluence]', default='confluence')
 
     parser.add_argument('--trophyName', metavar='trophyName', type=str,
                             help='Unique name for your cheevo trophy')
@@ -43,6 +43,8 @@ def createConfigFile(inputType, outputType, filename):
         if outputType == "confluence":
             contentObj = CheevosConfluence()
             contentObj.addConfluenceNodesToTemplate(newObj)
+        elif outputType == "json": 
+            newObj.cheevosTemplate['content_system']['type'] = "json"
 
         newObj.writeTemplate(inputType,filename)
 
@@ -81,18 +83,21 @@ Do you wish to override?[y/n]" % tmplName)
         qRes = cheevoObj.runQuery()
         cRes = cheevoObj.tabulateUsers(cheevoObj.getUserNamesFromQueryResults(qRes))
 
-        if args.outputType == "confluence":
+        if configData['content_system']['type'] == "confluence":
             contentObj = CheevosConfluence()
             contentObj.loadConfluenceInfoFromConfig(configData)
             contentObj.writeCheevosToPage(cRes)
+            print "Trophy page written: %s" % contentObj.trophyPageURL
+        elif configData['content_system']['type'] == "json":
+            outputFile = "output-" + args.confName 
+            baseObj.writeResults(outputFile,cRes,type="json")
+            print "Trophy results written to: %s" % outputFile
 
-        print "Trophy page written: %s" % contentObj.trophyPageURL
 
     else:
         print "(!) You need to either specify a configuration json file, or else specify "
         print "the information necessary to generate a template.\n" 
         parseObj.print_help()
-
 
     sys.exit(0)
 
